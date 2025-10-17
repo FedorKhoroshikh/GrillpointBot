@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GrillpointBot.Telegram", "G
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GrillpointBot.Core", "GrillpointBot.Core\GrillpointBot.Core.csproj", "{05751297-055B-42E1-8E75-B77E18ED4001}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GrillpointBot.Tests", "GrillpointBot.Tests\GrillpointBot.Tests.csproj", "{784E93CE-EDDD-4F5F-AD1B-C82F81272CE3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{05751297-055B-42E1-8E75-B77E18ED4001}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{05751297-055B-42E1-8E75-B77E18ED4001}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{05751297-055B-42E1-8E75-B77E18ED4001}.Release|Any CPU.Build.0 = Release|Any CPU
+		{784E93CE-EDDD-4F5F-AD1B-C82F81272CE3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{784E93CE-EDDD-4F5F-AD1B-C82F81272CE3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{784E93CE-EDDD-4F5F-AD1B-C82F81272CE3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{784E93CE-EDDD-4F5F-AD1B-C82F81272CE3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
