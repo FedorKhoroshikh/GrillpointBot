@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GrillpointBot.Telegram", "GrillpointBot.Telegram\GrillpointBot.Telegram.csproj", "{7CB273AE-28DA-4036-8BE4-154A44C6DA5B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GrillpointBot.Core", "GrillpointBot.Core\GrillpointBot.Core.csproj", "{05751297-055B-42E1-8E75-B77E18ED4001}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{7CB273AE-28DA-4036-8BE4-154A44C6DA5B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7CB273AE-28DA-4036-8BE4-154A44C6DA5B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7CB273AE-28DA-4036-8BE4-154A44C6DA5B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{05751297-055B-42E1-8E75-B77E18ED4001}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{05751297-055B-42E1-8E75-B77E18ED4001}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{05751297-055B-42E1-8E75-B77E18ED4001}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{05751297-055B-42E1-8E75-B77E18ED4001}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
