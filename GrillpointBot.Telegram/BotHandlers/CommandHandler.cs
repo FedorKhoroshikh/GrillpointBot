@@ -173,6 +173,80 @@ public class CommandHandler
             "Пожалуйста, выберите из меню 👇",
             replyMarkup: MainMenuKeyboard(),
             cancellationToken: ct);
+
+        if (_pendingOrders.TryGetValue(message.Chat.Id, out var order))
+        {
+            if (string.IsNullOrEmpty(order.DeliveryType))
+            {
+                if (msg.Contains("самовывоз", StringComparison.OrdinalIgnoreCase))
+                {
+                    order.DeliveryType = "Самовывоз";
+
+                    await _bot.SendMessage(message.Chat.Id,
+                        "Отлично! Укажите, пожалуйста, ваш номер телефона 📞",
+                        cancellationToken: ct);
+                    return;
+                }
+                else if (msg.Contains("достав", StringComparison.OrdinalIgnoreCase))
+                {
+                    order.DeliveryType = "Доставка";
+
+                    await _bot.SendMessage(message.Chat.Id,
+                        "Пожалуйста, введите адрес доставки 🏠",
+                        cancellationToken: ct);
+                    return;
+                }
+                else
+                {
+                    await _bot.SendMessage(message.Chat.Id,
+                        "Выберите вариант: 🛍 Самовывоз или 🚚 Доставка",
+                        cancellationToken: ct);
+                    return;
+                }
+            }
+            
+            switch (order.DeliveryType)
+            {
+                case "Доставка" when string.IsNullOrEmpty(order.Address):
+                    order.Address = msg;
+                    await _bot.SendMessage(message.Chat.Id,
+                        "Введите удобное время доставки (например, 19:30) ⏰",
+                        cancellationToken: ct);
+                    return;
+                case "Доставка" when string.IsNullOrEmpty(order.DeliveryTime):
+                    order.DeliveryTime = msg;
+                    await _bot.SendMessage(message.Chat.Id,
+                        "Укажите номер телефона 📞",
+                        cancellationToken: ct);
+                    return;
+            }
+            
+            if (string.IsNullOrEmpty(order.ContactPhone))
+            {
+                order.ContactPhone = msg;
+
+                SaveOrder(order);
+                _pendingOrders.Remove(message.Chat.Id);
+
+                await _bot.SendMessage(message.Chat.Id,
+                    "✅ Спасибо! Ваш заказ принят и передан на обработку 🙌",
+                    replyMarkup: MainMenuKeyboard(),
+                    cancellationToken: ct);
+
+                string notify = 
+                    $"🆕 *Новый заказ*\n" +
+                    $"🍔 {order.ItemName} — {order.Price} ₽\n" +
+                    $"🚚 {order.DeliveryType}\n" +
+                    (string.IsNullOrWhiteSpace(order.Address) ? "" : $"🏠 {order.Address}\n") +
+                    (string.IsNullOrWhiteSpace(order.DeliveryTime) ? "" : $"⏰ {order.DeliveryTime}\n") +
+                    $"📞 {order.ContactPhone}\n" +
+                    $"👤 {order.UserName} (`{order.UserId}`)\n" +
+                    $"🕒 {DateTime.Now:HH:mm}";
+
+                await _bot.SendMessage(_adminChatId, notify, parseMode: ParseMode.Markdown, cancellationToken: ct);
+                return;
+            }
+        }
     }
 
     private async Task HandleCallback(CallbackQuery query, CancellationToken ct)
@@ -221,26 +295,21 @@ public class CommandHandler
                             .Where(s => !string.IsNullOrWhiteSpace(s)))
                             .Trim()
             };
-            
-            SaveOrder(order);
 
-            await _bot.EditMessageText(
-                chatId,
-                query.Message!.MessageId,
-                $"✅ Заказ подтверждён: *{item.Name}* — {item.Price} ₽\nСпасибо за выбор Grillpoint!",
-                parseMode: ParseMode.Markdown,
-                cancellationToken: ct);
+            _pendingOrders[query.From.Id] = order;
 
-            await _bot.AnswerCallbackQuery(query.Id, "Заказ сохранён ✅", cancellationToken: ct);
-            
-            string ownerMsg = 
-                $"🆕 *Новый заказ*\n" +
-                $"🍔 {item.Name} — {item.Price} ₽\n" +
-                $"👤 {order.UserName} (`{order.UserId}`)\n" +
-                $"🕒 {DateTime.Now:HH:mm}";
-            
-            await _bot.SendMessage(_adminChatId, ownerMsg,
-                parseMode: ParseMode.Markdown, cancellationToken: ct);
+            var markup = new ReplyKeyboardMarkup(
+            [
+                [
+                    new KeyboardButton("🛍 Самовывоз"), 
+                    new KeyboardButton("🚚 Доставка")
+                ]
+            ]) { ResizeKeyboard = true };
+
+            await _bot.SendMessage(query.From.Id,
+                "Выберите способ получения заказа:", replyMarkup: markup, cancellationToken: ct);
+
+            await _bot.AnswerCallbackQuery(query.Id, cancellationToken: ct);
         }
         else if (data == "menu_back")
         {
