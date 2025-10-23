@@ -1,4 +1,4 @@
-namespace GrillpointBot.Telegram.Models;
+namespace GrillpointBot.Core.Models;
 
 public class Order
 {
