@@ -14,15 +14,17 @@
     </ItemGroup>
 
     <ItemGroup>
-        <None Update="Config\appsettings.json">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
         <None Update="Menu.json">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
         <None Update="orders.json">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\GrillpointBot.Core\GrillpointBot.Core.csproj" />
+      <ProjectReference Include="..\GrillpointBot.Infrastructure\GrillpointBot.Infrastructure.csproj" />
     </ItemGroup>
 
 </Project>

@@ -6,6 +6,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GrillpointBot.Core", "Grill
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GrillpointBot.Tests", "GrillpointBot.Tests\GrillpointBot.Tests.csproj", "{784E93CE-EDDD-4F5F-AD1B-C82F81272CE3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GrillpointBot.Infrastructure", "GrillpointBot.Infrastructure\GrillpointBot.Infrastructure.csproj", "{5CEAE251-5626-45B7-84E0-88B7AB12481E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +26,9 @@ Global
 		{784E93CE-EDDD-4F5F-AD1B-C82F81272CE3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{784E93CE-EDDD-4F5F-AD1B-C82F81272CE3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{784E93CE-EDDD-4F5F-AD1B-C82F81272CE3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5CEAE251-5626-45B7-84E0-88B7AB12481E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5CEAE251-5626-45B7-84E0-88B7AB12481E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5CEAE251-5626-45B7-84E0-88B7AB12481E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5CEAE251-5626-45B7-84E0-88B7AB12481E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
