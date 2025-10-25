@@ -27,6 +27,7 @@ public static class DependencyInjection
         // Core services
         services.AddSingleton<IMenuService, MenuService>();
         services.AddSingleton<IOrderService, OrderService>();
+        services.AddSingleton<ISessionStore, InMemorySessionStore>();
         
         // Data (Infrastructure)
         services.AddSingleton<IMenuRepository, JsonMenuRepository>();
