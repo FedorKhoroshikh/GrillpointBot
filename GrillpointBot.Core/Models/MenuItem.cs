@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace GrillpointBot.Core.Models;
 
-public class MenuItem
+public sealed class MenuItem
 {
     [JsonPropertyName("id")]    public string Id { get; set; } = "";
     [JsonPropertyName("name")]  public string Name { get; set; } = "";

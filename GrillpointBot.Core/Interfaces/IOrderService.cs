@@ -4,7 +4,9 @@ namespace GrillpointBot.Core.Interfaces;
 
 public interface IOrderService
 {
-    Task<Order> CreateOrderAsync(Order order);
+    Task<Order> CreateAsync(Order order);
+    Task<Order?> GetAsync(string id);
     Task<IEnumerable<Order>> GetAllOrdersAsync();
-    Task<IEnumerable<Order>> GetOrdersByUserAsync(long userId);
+    Task<IEnumerable<Order>> GetByUserAsync(long userId);
+    Task UpdateStatusAsync(string id, OrderStatus status);
 }

@@ -1,19 +1,25 @@
 namespace GrillpointBot.Core.Models;
 
-public class Order
+public enum OrderStatus
+{
+    Created,        // Создан.
+    Confirmed,      // Подтвержден. 
+    Cooking,        // Готовится... 
+    Ready,          // Готов.
+    OnTheWay,       // В пути...
+    Delivered,      // Доставлен.
+    Cancelled       // Отменен.
+}
+
+public sealed class Order
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
-    public string ItemId { get; set; } = "";
-    public string ItemName { get; set; } = "";
-    public decimal Price { get; set; }
-    
     public long UserId { get; set; }
     public string UserName { get; set; } = "";
-    
-    public string DeliveryType { get; set; } = "";
-    public string Address { get; set; } = "";
-    public string ContactPhone { get; set; } = "";
-    public string DeliveryTime { get; set; } = "";
-    
-    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    public List<OrderLine> Lines { get; set; } = [];
+    public DeliveryInfo Delivery { get; set; } = new();
+    public string? Comment { get; set; }
+    public decimal Total => Lines.Sum(l => l.LineTotal);
+    public OrderStatus Status { get; set; } = OrderStatus.Created;
+    public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
 }
