@@ -6,11 +6,13 @@ namespace GrillpointBot.Core.Config;
 
 public class AppSettings
 {
-    [JsonPropertyName("Telegram:BotToken")]
+    [JsonPropertyName("BotToken")]
     public string BotToken { get; set; }
     
-    [JsonPropertyName("Telegram:AdminChatId")]
-    public long AdminChatId { get; set; }
+    [JsonPropertyName("AdminChatId")]
+    public string AdminChatId { get; set; }
+
+    public long AdminChatIdNum => long.TryParse(AdminChatId, out var aci) ? aci : 0;
 
     public static AppSettings? LoadConfig()
     {
