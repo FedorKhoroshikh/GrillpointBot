@@ -14,6 +14,7 @@ public static class Constants
     public const string BotToken = "8103338668:AAGyaYtySbqB5J-pyh2KMqWqbX_g6hNhrO0";
     
     // Команды (кнопки основного меню)
+    public const string StartCmd = "/start";
     public const string MenuCmd = "📋 Меню";
     public const string AboutUsCmd = "ℹ️ О нас";
     public const string FeedbackCmd = "💬 Отзывы";

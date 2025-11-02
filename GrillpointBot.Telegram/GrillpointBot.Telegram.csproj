@@ -20,11 +20,18 @@
         <None Update="orders.json">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
+        <Content Include="Assets\**\*.*">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\GrillpointBot.Core\GrillpointBot.Core.csproj" />
       <ProjectReference Include="..\GrillpointBot.Infrastructure\GrillpointBot.Infrastructure.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Assets\" />
     </ItemGroup>
 
 </Project>

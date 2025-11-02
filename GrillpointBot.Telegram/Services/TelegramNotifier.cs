@@ -3,23 +3,19 @@ using GrillpointBot.Core.Models;
 
 namespace GrillpointBot.Telegram.Services;
 
-public class TelegramNotifier
+public class MessageFormatter
 {
     public static string FormatAdminNotification(Order order)
     {
         var sb = new StringBuilder()
-            .AppendLine("🆕 *Новый заказ*")
-            .AppendLine($"🍔 {order.ItemName} — {order.Price} ₽")
-            .AppendLine($"🚚 {order.DeliveryType}")
-            .AppendLine("🆕 *Новый заказ*")
-            .AppendLine($"🍔 {order.ItemName} — {order.Price} ₽")
-            .AppendLine($"🚚 {order.DeliveryType}")
-            .AppendLine(string.IsNullOrWhiteSpace(order.Address) ? "" : $"🏠 {order.Address}")
-            .AppendLine(string.IsNullOrWhiteSpace(order.DeliveryTime) ? "" : $"⏰ {order.DeliveryTime}")
-            .AppendLine($"📞 {order.ContactPhone}")
+            .AppendLine($"🆕 Новый заказ #{order.Id}")
+            .AppendLine($"🍔 {order.Lines} — {order.Total} ₽")
+            .AppendLine($"🚚 {order.Delivery.Method}")
+            .AppendLine(string.IsNullOrWhiteSpace(order.Delivery.AddressText) ? "" : $"🏠 {order.Delivery.AddressText}")
+            .AppendLine(string.IsNullOrWhiteSpace(order.Delivery.TimeText) ? "" : $"⏰ {order.Delivery.TimeText}")
+            .AppendLine($"📞 {order.Delivery.ContactPhone}")
             .AppendLine($"👤 {order.UserName} (`{order.UserId}`)")
             .AppendLine($"🕒 {DateTime.Now:HH:mm}");
         return sb.ToString();
     }
-
 }
