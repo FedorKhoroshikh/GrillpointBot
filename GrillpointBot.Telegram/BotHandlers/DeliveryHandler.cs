@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Xml.Linq;
 using GrillpointBot.Core.Common;
 using GrillpointBot.Core.Config;
 using GrillpointBot.Core.Interfaces;
@@ -48,46 +47,43 @@ public class DeliveryHandler(ITelegramBotClient bot, IOrderService orders, AppSe
         var msg = message.Text ?? "";
 
         // Шаг 1: выбор способа
-        if (string.IsNullOrEmpty(order.DeliveryType))
+        if (msg.Contains(_pickup, StringComparison.OrdinalIgnoreCase))
         {
-            if (msg.Contains(_pickup, StringComparison.OrdinalIgnoreCase))
-            {
-                order.DeliveryType = Constants.Pickup;
-                await bot.SendMessage(message.Chat.Id,
-                    "Отлично! Укажите, пожалуйста, ваш номер телефона 📞",
-                    cancellationToken: ct);
-                return true;
-            }
-            if (msg.Contains(_delivery, StringComparison.OrdinalIgnoreCase))
-            {
-                order.DeliveryType = Constants.Delivery;
-                await bot.SendMessage(message.Chat.Id,
-                    "Пожалуйста, введите адрес доставки 🏠",
-                    cancellationToken: ct);
-                return true;
-            }
-
+            order.Delivery.Method = DeliveryMethod.Pickup;
             await bot.SendMessage(message.Chat.Id,
-                "Выберите вариант: 🛍 Самовывоз или 🚚 Доставка",
+                "Отлично! Укажите, пожалуйста, ваш номер телефона 📞",
+                cancellationToken: ct);
+            return true;
+        }
+        if (msg.Contains(_delivery, StringComparison.OrdinalIgnoreCase))
+        {
+            order.Delivery.Method = DeliveryMethod.Delivery;
+            await bot.SendMessage(message.Chat.Id,
+                "Пожалуйста, введите адрес доставки 🏠",
                 cancellationToken: ct);
             return true;
         }
 
+        await bot.SendMessage(message.Chat.Id,
+            "Выберите вариант: 🛍 Самовывоз или 🚚 Доставка",
+            cancellationToken: ct);
+        return true;
+
         // Шаг 2: если доставка — адрес и время
-        if (order.DeliveryType == Constants.Delivery)
+        if (order.Delivery.Method is DeliveryMethod.Delivery)
         {
-            if (string.IsNullOrEmpty(order.Address))
+            if (string.IsNullOrEmpty(order.Delivery.AddressText))
             {
-                order.Address = msg;
+                order.Delivery.AddressText = msg;
                 await bot.SendMessage(message.Chat.Id,
                     "Введите удобное время доставки (например, 19:30) ⏰",
                     cancellationToken: ct);
                 return true;
             }
 
-            if (string.IsNullOrEmpty(order.DeliveryTime))
+            if (string.IsNullOrEmpty(order.Delivery.TimeText))
             {
-                order.DeliveryTime = msg;
+                order.Delivery.TimeText = msg;
                 await bot.SendMessage(message.Chat.Id,
                     "Укажите номер телефона 📞",
                     cancellationToken: ct);
@@ -96,9 +92,9 @@ public class DeliveryHandler(ITelegramBotClient bot, IOrderService orders, AppSe
         }
 
         // Шаг 3: номер телефона
-        if (string.IsNullOrEmpty(order.ContactPhone))
+        if (string.IsNullOrEmpty(order.Delivery.ContactPhone))
         {
-            order.ContactPhone = msg;
+            order.Delivery.ContactPhone = msg;
 
             // Завершение
             await FinalizeOrderAsync(order, ct);
@@ -111,13 +107,13 @@ public class DeliveryHandler(ITelegramBotClient bot, IOrderService orders, AppSe
 
     private async Task FinalizeOrderAsync(Order order, CancellationToken ct)
     {
-        await orders.CreateOrderAsync(order);
+        await orders.CreateAsync(order);
 
         await bot.SendMessage(order.UserId,
             "✅ Спасибо! Ваш заказ принят и передан на обработку 🙌",
             cancellationToken: ct);
 
-        string notify = TelegramNotifier.FormatAdminNotification(order);
+        string notify = MessageFormatter.FormatAdminNotification(order);
         await bot.SendMessage(config.AdminChatId, notify, parseMode: ParseMode.Markdown, cancellationToken: ct);
     }
 }
