@@ -29,7 +29,7 @@ public class JsonOrderRepository : IOrderRepository
             };
             
             await File.WriteAllTextAsync(OrdersPath, JsonSerializer.Serialize(orders, options), System.Text.Encoding.UTF8);
-            Console.WriteLine($"[Order] Saved: {order.ItemName} ({order.Price}₽) from {order.UserName}");
+            Console.WriteLine($"[Order] Saved: {order.Id} ({order.Total}₽) from {order.UserName}");
         }
         catch (Exception e)
         {
