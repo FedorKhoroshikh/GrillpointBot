@@ -118,7 +118,7 @@ public class CatalogHandler(
         var weight = it.Weight is > 0 ? $"Вес: {it.Weight} г" : "Вес: —";
         var price  = $"Цена: {it.Price:0.#} ₽";
         
-        sb.AppendLine($"\n_{weight}_                                 *{price}*");
+        sb.AppendLine($"\n_{weight}_               *{price}*");
         return sb.ToString();
     }
     

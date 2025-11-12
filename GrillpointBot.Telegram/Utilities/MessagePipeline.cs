@@ -18,4 +18,8 @@ public class MessagePipeline(
             try { await bot.DeleteMessage(chatId, id, ct); } 
             catch { /* ignore */ }
     }
+
+    public Task RemoveKb(long chatId, int messageId, CancellationToken ct) =>
+        Task.FromResult(bot.EditMessageReplyMarkup(chatId, 
+            messageId, replyMarkup: null, cancellationToken: ct));
 }

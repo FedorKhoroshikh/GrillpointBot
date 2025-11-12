@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using GrillpointBot.Core.Models;
 
@@ -11,9 +12,11 @@ public class MessageFormatter
             .AppendLine($"🆕 Новый заказ #{order.Id}")
             .AppendLine($"🍔 {order.Lines} — {order.Total} ₽")
             .AppendLine($"🚚 {order.Delivery.Method}")
-            .AppendLine(string.IsNullOrWhiteSpace(order.Delivery.AddressText) ? "" : $"🏠 {order.Delivery.AddressText}")
-            .AppendLine(string.IsNullOrWhiteSpace(order.Delivery.TimeText) ? "" : $"⏰ {order.Delivery.TimeText}")
-            .AppendLine($"📞 {order.Delivery.ContactPhone}")
+            .AppendLine(string.IsNullOrWhiteSpace(order.Delivery.Address) ? "" : $"🏠 {order.Delivery.Address}")
+            .AppendLine(string.IsNullOrWhiteSpace(order.Delivery.ScheduledTime.ToString()) 
+                ? "" 
+                : $"⏰ {order.Delivery.ScheduledTime.ToString()}")
+            .AppendLine($"📞 {order.Delivery.Phone}")
             .AppendLine($"👤 {order.UserName} (`{order.UserId}`)")
             .AppendLine($"🕒 {DateTime.Now:HH:mm}");
         return sb.ToString();

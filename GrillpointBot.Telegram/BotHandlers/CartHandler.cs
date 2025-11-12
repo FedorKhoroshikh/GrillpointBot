@@ -5,6 +5,7 @@ using GrillpointBot.Telegram.Utilities;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using MessageFormatter = GrillpointBot.Telegram.Utilities.MessageFormatter;
 
 namespace GrillpointBot.Telegram.BotHandlers;
 
@@ -40,9 +41,9 @@ public class CartHandler(
         
         if (q <= 0) s.DraftQty.Remove(itemId);
         else        s.DraftQty[itemId] = q;
-        
-        await sessions.UpsertAsync(s);
 
+        await sessions.UpsertAsync(s);
+        
         await bot.AnswerCallbackQuery(cq.Id, cancellationToken: ct);
         await bot.EditMessageReplyMarkup(
             cq.Message!.Chat.Id, 
@@ -62,26 +63,8 @@ public class CartHandler(
         s.CategoriesMessageId = null;
         s.ItemMessageIds.Clear();
         await sessions.UpsertAsync(s);
-        
-        decimal total = 0;
-        int counter = 0;
-        var lines = new List<string> { "<b>Ваш заказ:</b>\n" };
-        foreach (var (id, qty) in s.DraftQty)
-        {
-            counter++;
-            var it = await menu.GetItemByIdAsync(id);
-            if (it is null) continue;
-            var sum = it.Price * qty;
-            total += sum;
 
-            lines.Add($"({counter})  <b>{it.Category}</b> — {it.Name}\n" +
-                      $"     <i>{it.Weight} г</i> · {it.Price:0.#} ₽ × {qty} = <b>{sum:0.#} ₽</b>\n");
-        }
-        lines.Add($"<b>Итого:</b> {total:0.#} ₽");
-        
-        var body = lines.Count == 0
-            ? "Корзина пуста."
-            : string.Join("\n", lines);
+        var msgBody = await MessageFormatter.BuildOrderSummaryAsync(s, menu);
         
         // если корзина уже есть — редактируем
         if (s.CartMessageId is { } existing)
@@ -90,7 +73,7 @@ public class CartHandler(
             await bot.EditMessageText(
                 chatId: cq.Message.Chat.Id,
                 messageId: existing,
-                text: body,
+                text: msgBody,
                 parseMode: ParseMode.Html,
                 replyMarkup: Kb.CartSummary(),
                 cancellationToken: ct);
@@ -98,21 +81,10 @@ public class CartHandler(
             return;
         }
         
-        if (s.DraftQty.Count == 0)
-        {
-            await bot.AnswerCallbackQuery(cq.Id, cancellationToken: ct);
-            await bot.SendMessage(
-                cq.Message!.Chat.Id,
-                "Корзина пуста.",
-                replyMarkup: Kb.CartSummary(),
-                cancellationToken: ct);
-            return;
-        }
-
         await bot.AnswerCallbackQuery(cq.Id, cancellationToken: ct);
         var sent = await bot.SendMessage(
             chatId: cq.Message!.Chat.Id,
-            text: body,
+            text: msgBody,
             parseMode: ParseMode.Html,
             replyMarkup: Kb.CartSummary(),
             cancellationToken: ct);

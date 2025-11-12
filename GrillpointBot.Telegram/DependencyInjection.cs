@@ -48,12 +48,12 @@ public static class DependencyInjection
         services.AddSingleton<UpdateRouter>();
         services.AddSingleton<MessageHandler>();
         services.AddSingleton<CallbackHandler>();
-        services.AddSingleton<DeliveryHandler>();
         services.AddSingleton<CatalogHandler>();
         services.AddSingleton<CartHandler>();
         services.AddSingleton<ConfirmHandler>();
         services.AddSingleton<CheckoutHandler>();
         services.AddSingleton<MessagePipeline>();
+        services.AddSingleton<MessageFormatter>();
 
         var provider = services.BuildServiceProvider();
         var bot = provider.GetRequiredService<UpdateRouter>();
