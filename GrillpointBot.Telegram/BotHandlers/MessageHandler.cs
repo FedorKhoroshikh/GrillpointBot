@@ -11,40 +11,42 @@ namespace GrillpointBot.Telegram.BotHandlers;
 public class MessageHandler(
     ITelegramBotClient bot,
     CatalogHandler catalogHandler,
+    CheckoutHandler checkoutHandler,
     ISessionStore sessions,
     IMenuService menuService)
 {
     public async Task HandleMessageAsync(Message msg, CancellationToken ct)
     {
-        if (msg.Text is null) return;
-
         var chatId = msg.Chat.Id;
         var userId = msg.From!.Id;
-        var text   = msg.Text.Trim();
         var session = await sessions.GetOrCreateAsync(userId);
-
-        // 1) Команды
-        switch (text)
+        if(string.IsNullOrWhiteSpace(session.UserNick)) session.UserNick = msg.From?.Username;
+        await sessions.UpsertAsync(session);
+        
+        // 0) Проверка ввода номера телефона
+        if (msg.Contact is not null && session.State == FlowState.CheckoutPhone)
         {
-            case Constants.StartCmd:
-                await AskNewSessionAsync(chatId, userId, ct);
-                return;
-
-            case Constants.MenuCmd:
-                session.State = FlowState.Browsing;
-                await sessions.UpsertAsync(session);
-                await catalogHandler.ShowCategoriesAsync(chatId, ct);
-                return;
+            session.CheckoutMessageIds.Add(msg.MessageId);
+            session.DraftDelivery.Phone = msg.Contact.PhoneNumber;
+            session.State = FlowState.Confirm;
+            await sessions.UpsertAsync(session);
             
-            case Constants.AboutUsCmd:
-                await ShowAboutUsAsync(chatId, ct);
-                return;
-            
-            case Constants.FeedbackCmd:
-                await ShowFeedbackAsync(chatId, ct);
-                return;
+            await checkoutHandler.SendConfirmCard(chatId, session, ct);
+            return;
         }
         
+        var text = msg.Text ?? string.Empty;
+        text = text.Trim();
+        
+        if (string.IsNullOrWhiteSpace(text)) return;
+        
+        // 1) Команды
+        if (text == "/start")
+        {
+            await AskNewSessionAsync(chatId, userId, ct);
+            return;
+        }
+
         // 2) Категория (всегда раньше "сохранить комментарий")
         var categories = await menuService.GetCategoriesAsync();
         var category = categories.FirstOrDefault(c =>
@@ -71,7 +73,7 @@ public class MessageHandler(
                 chatId,
                 $"Ваш комментарий:\n\n<blockquote>{System.Net.WebUtility.HtmlEncode(text)}</blockquote>",
                 ParseMode.Html,
-                replyMarkup: Kb.Comment(),
+                replyMarkup: Kb.SaveOrEdit(CallbackPrefixes.SaveComment, CallbackPrefixes.EditComment),
                 cancellationToken: ct);
             
             // сохраняем ID сообщения с ответом бота
@@ -79,11 +81,21 @@ public class MessageHandler(
             await sessions.UpsertAsync(session);
             return;
         }
+        
+        // 4) Шаги чекаута: адрес / время / телефон
+        if (session.State is FlowState.CheckoutAddress 
+                          or FlowState.CheckoutTime 
+                          or FlowState.CheckoutPhone)
+        {
+            // проксируем ввод в CheckoutHandler
+            await checkoutHandler.HandleUserInputAsync(msg, ct);
+            return;
+        }
 
         await HandleFallback(chatId, ct);
     }
 
-#region Home page methods: Welcome, About us, Feedback
+#region Home page methods
 
     private async Task AskNewSessionAsync(long chatId, long userId, CancellationToken ct)
     {
@@ -110,22 +122,7 @@ public class MessageHandler(
             photo: InputFile.FromUri("https://i.pinimg.com/originals/a6/13/a0/a613a0855cf198699926a8bcbb1e21a7.jpg"),
             caption: "## 👋 Добро пожаловать в *Grillpoint!*\n\nГорячие сэндвичи, приготовленные с душой.",
             parseMode: ParseMode.Markdown,
-            replyMarkup: Kb.Main(),
-            cancellationToken: ct);
-    }
-    
-    private async Task ShowAboutUsAsync(long chatId, CancellationToken ct)
-    {
-        await bot.SendMessage(chatId,
-            "ℹ️ Grillpoint — уютное место с горячими сэндвичами и любовью к деталям. " +
-            "\n\nМы готовим простую и честную еду: короткое меню, стабильный вкус и быстрая подача.",
-            cancellationToken: ct);
-    }
-
-    private async Task ShowFeedbackAsync(long chatId, CancellationToken ct)
-    {
-        await bot.SendMessage(chatId,
-            "Оставьте отзыв после доставки — нам это очень помогает улучшаться 🙏",
+            replyMarkup: Kb.MainInline(),
             cancellationToken: ct);
     }
 

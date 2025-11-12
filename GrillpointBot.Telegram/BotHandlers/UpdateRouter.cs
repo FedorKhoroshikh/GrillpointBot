@@ -23,11 +23,16 @@ public class UpdateRouter(
     {
         try
         {
-            if (update is { Type: UpdateType.Message, Message.Text: not null })
-                await messageHandler.HandleMessageAsync(update.Message, ct);
-            else if (update.Type == UpdateType.CallbackQuery)
-                await callbackHandler.HandleAsync(update.CallbackQuery!, ct);
-            
+            switch (update.Type)
+            {
+                case UpdateType.Message:
+                    await messageHandler.HandleMessageAsync(update.Message, ct);
+                    break;
+                case UpdateType.CallbackQuery:
+                    await callbackHandler.HandleCallbackAsync(update.CallbackQuery!, ct);
+                    break;
+            }
+
             Console.WriteLine($"[Router] Update received: {update.Type}");
         }
         catch (Exception e)
