@@ -1,3 +1,5 @@
+using GrillpointBot.Core.Interfaces;
+
 namespace GrillpointBot.Core.Models;
 
 public enum FlowState
@@ -8,10 +10,20 @@ public enum FlowState
     InCart,             // редактирует корзину
     CommentPending,     // комментарий к заказу
     CheckoutMethod,     // выбор доставки/самовывоза
+    
     CheckoutAddress,    // ввод адреса
+    
+    CheckoutAddressChoice,   // выбор способа: вручную или по гео
+    CheckoutAddressManual,   // ввод адреса текстом
+    CheckoutAddressGeo,      // ожидание геолокации от Telegram
+    CheckoutAddressConfirm,  // подтверждение адреса (точка/текст)
+    PickupPreview,           // показ точки самовывоза
+    PickupConfirm,           // подтверждение самовывоза
+    
     CheckoutTime,       // ввод времени
     CheckoutPhone,      // ввод телефона
     Confirm             // подтверждение заказа
+    
 }
 
 public sealed class Session
@@ -36,4 +48,14 @@ public sealed class Session
     public List<int> CheckoutMessageIds { get; set; } = [];          // ID сообщений выбора получения заказа и заполнения контактных данных
     
     public DateTime LastUpdatedUtc { get; set; } = DateTime.UtcNow;  // таймкод последнего действия в сессии
+    
+    public async Task ClearAsync()
+    {
+        Cart.Clear();
+        DraftQty.Clear();
+        Comment = DraftComment = null;
+        CartMessageId = null;
+        CommentMessageIds.Clear();
+        State = FlowState.Idle;
+    }
 }

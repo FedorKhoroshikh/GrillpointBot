@@ -7,7 +7,7 @@ namespace GrillpointBot.Telegram.Services;
 
 public static class Kb
 {
-    public static InlineKeyboardMarkup MainInline() => new([
+    public static InlineKeyboardMarkup MainInline => new([
         [ InlineKeyboardButton.WithCallbackData("🍔 Меню", CallbackPrefixes.MainMenu) ],
         [
             InlineKeyboardButton.WithCallbackData("ℹ️ О нас", CallbackPrefixes.AboutUs),
@@ -15,20 +15,32 @@ public static class Kb
         ]
     ]);
 
-    public static InlineKeyboardMarkup BackToMain() => new([
-        [ InlineKeyboardButton.WithCallbackData("⬅️ Назад", CallbackPrefixes.BackToMain) ]
+    public static InlineKeyboardMarkup Back (string backPrefix, string? text = "Назад") => new([
+        [ InlineKeyboardButton.WithCallbackData($"⬅️ {text}", backPrefix) ]
     ]);
     
-    public static ReplyKeyboardMarkup Main() =>
+    public static InlineKeyboardMarkup PickupConfirm => new([
+        [
+            InlineKeyboardButton.WithCallbackData("⬅️ Назад", CallbackPrefixes.AddressBackToMethod),
+            InlineKeyboardButton.WithCallbackData("✅ Подтвердить", CallbackPrefixes.PickupConfirm)
+        ]
+    ]);
+
+    
+    public static InlineKeyboardMarkup BackToWelcome => new([
+        [ InlineKeyboardButton.WithCallbackData("🏠 На главную", CallbackPrefixes.BackToWelcome) ]
+    ]);
+    
+    public static ReplyKeyboardMarkup Main =>
         new([
             [new KeyboardButton(Constants.MenuCmd)],
             [new KeyboardButton(Constants.AboutUsCmd), new KeyboardButton(Constants.FeedbackCmd)]
         ]) { ResizeKeyboard = true };
     
-    public static InlineKeyboardMarkup Restart() => new([
+    public static InlineKeyboardMarkup Restart => new([
         [
-            InlineKeyboardButton.WithCallbackData("✅ Да, начать заново", "session:restart"),
-            InlineKeyboardButton.WithCallbackData("❌ Нет, продолжить", "session:keep")
+            InlineKeyboardButton.WithCallbackData("✅ Начать заново", CallbackPrefixes.RestartSession),
+            InlineKeyboardButton.WithCallbackData("🔄 Продолжить", CallbackPrefixes.KeepSession)
         ]
     ]);
 
@@ -61,14 +73,14 @@ public static class Kb
         ]
     );
 
-    public static InlineKeyboardMarkup CartSummary() => new( 
+    public static InlineKeyboardMarkup CartSummary => new( 
         [
             [InlineKeyboardButton.WithCallbackData("Изменить", CallbackPrefixes.CartEdit)],   // просто вернёт к категориям
             [InlineKeyboardButton.WithCallbackData("Продолжить", CallbackPrefixes.CartContinue)]
         ]
     );
     
-    public static InlineKeyboardMarkup SkipComment() => new ([
+    public static InlineKeyboardMarkup SkipComment => new ([
         [
             InlineKeyboardButton.WithCallbackData("Пропустить", CallbackPrefixes.SkipComment)
         ]
@@ -76,17 +88,17 @@ public static class Kb
 
     public static InlineKeyboardMarkup SaveOrEdit(string savePrefix, string editPrefix) => new ([
         [
-            InlineKeyboardButton.WithCallbackData("✅ Сохранить", savePrefix),
-            InlineKeyboardButton.WithCallbackData("✏️ Изменить", editPrefix)
+            InlineKeyboardButton.WithCallbackData("✏️ Изменить", editPrefix),
+            InlineKeyboardButton.WithCallbackData("✅ Сохранить", savePrefix)
         ]
     ]);
     
-    public static InlineKeyboardMarkup CheckoutMethod() => new([
+    public static InlineKeyboardMarkup CheckoutMethod => new([
         [ InlineKeyboardButton.WithCallbackData("🚚 Доставка", $"{CallbackPrefixes.CheckoutMethodDelivery}") ],
-        [ InlineKeyboardButton.WithCallbackData("🏃 Самовывоз", $"{CallbackPrefixes.CheckoutMethodPickup}") ]
+        [ InlineKeyboardButton.WithCallbackData("🚶 Самовывоз", $"{CallbackPrefixes.CheckoutMethodPickup}") ]
     ]);
 
-    public static InlineKeyboardMarkup ConfirmOrder() => new(
+    public static InlineKeyboardMarkup ConfirmOrder => new(
         [
             [InlineKeyboardButton.WithCallbackData("✅ Подтвердить", $"{CallbackPrefixes.CheckoutConfirm}")],
             
@@ -96,6 +108,28 @@ public static class Kb
             ]
         ]
     );
+
+    public static InlineKeyboardMarkup AddressChoice(bool showBack = true)
+    {
+        var rows = new List<IEnumerable<InlineKeyboardButton>>
+        {
+            new[] {InlineKeyboardButton.WithCallbackData("📍 Отправить текущую геопозицию", CallbackPrefixes.AddressGeoCurrent) },
+            new[] {InlineKeyboardButton.WithCallbackData("🌏 Указать на карте", CallbackPrefixes.AddressGeoManual)},
+            new[] {InlineKeyboardButton.WithCallbackData("✏️ Ввести вручную", CallbackPrefixes.AddressManual)}
+        };
+
+        if (showBack)
+            rows.Add([InlineKeyboardButton.WithCallbackData("⬅️ Назад", CallbackPrefixes.AddressBackToMethod)]);
+        
+        return new InlineKeyboardMarkup(rows);
+    }
+    
+    public static ReplyKeyboardMarkup GeoCurrent => new([
+        [
+            new KeyboardButton("📍 Отправить геолокацию"){ RequestLocation = true }
+        ]
+    ])
+    { ResizeKeyboard = true, OneTimeKeyboard = true };
  
     public static InlineKeyboardMarkup DateKb()
     {
@@ -131,7 +165,7 @@ public static class Kb
         return new InlineKeyboardMarkup(times);
     }
     
-    public static ReplyKeyboardMarkup Phone() => new([
+    public static ReplyKeyboardMarkup Phone => new([
             [
                 new KeyboardButton("📞 Отправить телефон"){ RequestContact = true }
             ]

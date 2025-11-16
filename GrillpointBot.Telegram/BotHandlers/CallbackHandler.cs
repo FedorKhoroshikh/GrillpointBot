@@ -1,4 +1,3 @@
-using GrillpointBot.Core.Common;
 using GrillpointBot.Core.Interfaces;
 using GrillpointBot.Core.Models;
 using GrillpointBot.Telegram.Services;
@@ -12,48 +11,69 @@ namespace GrillpointBot.Telegram.BotHandlers;
 
 public static class CallbackPrefixes
 {
+    // Префикс навигации стартовой страницы
     public const string MainMenu = "home:menu";
-    public const string AboutUs = "home:about";
+    public const string AboutUs  = "home:about";
     public const string Feedback = "home:feedback";
-    public const string BackToMain = "home:back";
+    public const string Back     = "home:back";
+
+    // Префикс категории меню
+    public const string Category    = "cat:";           // префикс категории
     
-    public const string Category    = "cat:";           // префикс категории      
-    
+    // Префиксы карточки товара
     public const string AddStart    = "item:add;";      // показать [-] 1 [+]
     public const string AddInc      = "item:inc;";      // +1 (в панели карточки)
     public const string AddDec      = "item:dec;";      // -1 (в панели карточки)
     
+    // Префиксы шагов работы с корзиной товаров
     public const string OpenCart     = "item:open;cart";   // показать корзину (из драфтов)
-    public const string CartEdit     = "cart:edit";        // вернуться к выбору категорий (c сохранением текущего состояния)
+    public const string CartEdit     = "cart:edit";        // вернуться к выбору категорий (с сохранением текущего состояния)
     public const string CartContinue = "cart:continue";    // переход к комментарию
     public const string CartCheckout = "cart:checkout";    // продолжить оформление (следующий шаг)
 
+    // Префиксы шагов обработки статуса сессии
     public const string RestartSession = "session:restart";
     public const string KeepSession    = "session:keep";
 
+    // Префиксы шагов указания комментария к заказу
     public const string SkipComment = "comment:skip";      // не добавлять комментарий
     public const string SaveComment = "comment:save";      // сохранить комментарий
     public const string EditComment = "comment:edit";      // изменить комментарий
     
+    // Префиксы шагов выбора получения заказа
     public const string CheckoutMethodDelivery = "checkout:method:delivery";
     public const string CheckoutMethodPickup   = "checkout:method:pickup";
+    
+    // Префиксы шагов указания адреса доставки
+    public const string AddressManual       = "address:manual";
+    public const string AddressGeoCurrent   = "address:geo:current";   // RequestLocation
+    public const string AddressGeoManual    = "address:geo:manual";    // “указать на карте”
+    public const string AddressConfirm      = "address:confirm";
+    public const string AddressEdit         = "address:edit";
+    public const string AddressBackToMethod = "address:back:method";
+    public const string PickupConfirm       = "pickup:confirm";
 
+    // Префиксы шагов выбора даты и времени получения заказа
     public const string ChooseDate = "time:date";
     public const string ChooseTime = "time:choose";
-    public const string SaveTime = "time:save";
-    public const string EditTime = "time:edit";
+    public const string SaveTime   = "time:save";
+    public const string EditTime   = "time:edit";
 
+    // Префиксы шага подтверждения номера телефона
     public const string SendPhone = "checkout:phone";
+    
+    // Префикс шагов подтверждения заказа
     public const string CheckoutConfirm = "checkout:confirm";
     public const string CheckoutEdit    = "checkout:edit";
     public const string CheckoutCancel  = "checkout:cancel";
+    public const string BackToWelcome   = "checkout:welcome";
 }
 
 public class CallbackHandler(
     ITelegramBotClient bot,
-    CartHandler cartHandler,
     ISessionStore sessions,
     IMenuService menu,
+    CartHandler cartHandler,
     CatalogHandler catalogHandler,
     MessageHandler messageHandler,
     CheckoutHandler checkoutHandler,
@@ -81,10 +101,14 @@ public class CallbackHandler(
             if (data.StartsWith("cart:") || data.StartsWith("item:")) await HandleCart(data, query, ct);
             if (data.StartsWith("comment:")) await HandleComment(data, query, ct);
             if (data.StartsWith("time:")) await HandleDateTimeSelection(data, query, ct);
-            if (data.StartsWith("checkout:")) await HandleCheckout(data, query, ct);
+            if (data.StartsWith("checkout:") || data.StartsWith("address:")
+                                             || data == CallbackPrefixes.PickupConfirm) 
+                await HandleCheckout(data, query, ct);
+            
             if (data.StartsWith("confirm:") || data == CallbackPrefixes.CheckoutConfirm
                                             || data == CallbackPrefixes.CheckoutEdit
-                                            || data == CallbackPrefixes.CheckoutCancel)
+                                            || data == CallbackPrefixes.CheckoutCancel
+                                            || data == CallbackPrefixes.BackToWelcome)
                 await HandleConfirm(data, query, ct);
         }
         catch (Exception e)
@@ -96,27 +120,30 @@ public class CallbackHandler(
 
     private async Task HandleHome(string data, CallbackQuery query, CancellationToken ct)
     {
+        const string backTxt = "На главную";   
+        
         switch (data)
         {
             case CallbackPrefixes.MainMenu:
-                await pipeline.RemoveKb(query.Message!.Chat.Id, query.Message.MessageId, ct);
+                // Удаляем приветственное сообщение
+                await pipeline.DeleteIfExistsAsync(query.Message!.Chat.Id, query.Message.MessageId, ct);
                 await catalogHandler.ShowCategoriesAsync(query.Message!.Chat.Id, ct);
                 break;
             case CallbackPrefixes.AboutUs:
                 await bot.EditMessageText(query.Message!.Chat.Id, query.Message.MessageId,
                     "ℹ️ Grillpoint — уютное место с горячими сэндвичами и любовью к деталям. " +
                     "\n\nМы готовим простую и честную еду: короткое меню, стабильный вкус и быстрая подача.",
-                    replyMarkup: Kb.BackToMain(), cancellationToken: ct);
+                    replyMarkup: Kb.Back(CallbackPrefixes.Back, backTxt), cancellationToken: ct);
                 break;
             case CallbackPrefixes.Feedback:
                 await bot.EditMessageText(query.Message!.Chat.Id, query.Message.MessageId,
                     "⭐ Оставьте отзыв после доставки ..." +
                     "это очень помогает нам стать улучшаться 🙏",
-                    replyMarkup: Kb.BackToMain(), cancellationToken: ct);
+                    replyMarkup: Kb.Back(CallbackPrefixes.Back, backTxt), cancellationToken: ct);
                 break;
-            case CallbackPrefixes.BackToMain:
+            case CallbackPrefixes.Back:
                 await bot.EditMessageText(query.Message!.Chat.Id, query.Message.MessageId,
-                    "Выберите действие:", replyMarkup: Kb.MainInline(), cancellationToken: ct);
+                    "Выберите действие:", replyMarkup: Kb.MainInline, cancellationToken: ct);
                 break;
         }
         await bot.AnswerCallbackQuery(query.Id, cancellationToken: ct);
@@ -153,9 +180,9 @@ public class CallbackHandler(
                 return;
             }
 
+            // возвращаем к категориям, qty в Draft остаются
             case CallbackPrefixes.CartEdit:
             {
-                // возвращаем к категориям, qty в Draft остаются
                 var s = await sessions.GetOrCreateAsync(userId);
                 
                 // удаляем корзину
@@ -165,14 +192,13 @@ public class CallbackHandler(
 
                 // показываем категории (reply-клава)
                 var categories = await menu.GetCategoriesAsync();
-                await bot.AnswerCallbackQuery(query.Id, cancellationToken: ct);
                 var msg = await bot.SendMessage(query.Message!.Chat.Id, 
                     "Выберите категорию:", 
                     replyMarkup: Kb.Categories(categories), 
                     cancellationToken: ct);
 
                 s.State = FlowState.Browsing;
-                s.CategoriesMessageId = msg.Id;
+                s.CategoriesMessageId = msg.MessageId;
                 await sessions.UpsertAsync(s);
                 return;
             }
@@ -188,7 +214,7 @@ public class CallbackHandler(
                     try
                     {
                         await bot.EditMessageReplyMarkup(
-                            query.Message.Chat.Id,
+                            query.Message!.Chat.Id,
                             cartMid,
                             replyMarkup: null,
                             cancellationToken: ct);
@@ -196,9 +222,9 @@ public class CallbackHandler(
                     catch { /* ignore */ }
                 }
                 
-                var msg = await bot.SendMessage(query.Message.Chat.Id, 
+                var msg = await bot.SendMessage(query.Message!.Chat.Id, 
                     "✏️ Хотите оставить комментарий к заказу?\nЕсли да — напишите его сейчас сообщением 👇",
-                    replyMarkup: Kb.SkipComment(), 
+                    replyMarkup: Kb.SkipComment, 
                     cancellationToken: ct);
                 s.CommentMessageIds.Add(msg.MessageId);
                 await sessions.UpsertAsync(s);
@@ -206,11 +232,8 @@ public class CallbackHandler(
             }
             
             case CallbackPrefixes.CartCheckout:
-                // здесь можно дернуть следующий шаг CheckoutHandler (способ получения и т.д.)
-                await bot.AnswerCallbackQuery(query.Id, 
-                    "Оформление: выберите способ получения (доставка/самовывоз).", 
-                    cancellationToken: ct);
-                // TODO: checkoutHandler.StartAsync(query, ct);
+                await checkoutHandler.StartAsync(query.Message!.Chat.Id, query.From.Id, ct);
+                await bot.AnswerCallbackQuery(query.Id, "Оформление начато", cancellationToken: ct);
                 return;
             
             default:
@@ -238,51 +261,56 @@ public class CallbackHandler(
         if (data.StartsWith(CallbackPrefixes.KeepSession))
         {
             await bot.AnswerCallbackQuery(query.Id, "Продолжаем текущую сессию", cancellationToken: ct);
+            await messageHandler.SendWelcomeAsync(query.Message!.Chat.Id, ct);
         }
     }
 
     private async Task HandleComment(string data, CallbackQuery query, CancellationToken ct)
     {
+        var s = await sessions.GetOrCreateAsync(query.From.Id);
+        var chatId = query.Message!.Chat.Id;
+        var msgId = query.Message.MessageId;
+        var queryId = query.Id;
+        var fromId = query.From.Id;
+        Message? cMsg;
+        
         if (data.StartsWith(CallbackPrefixes.SkipComment))
         {
-            var s = await sessions.GetOrCreateAsync(query.From.Id);
             s.Comment = null;
             s.DraftComment = null;
             s.State = FlowState.CheckoutMethod;
             await sessions.UpsertAsync(s);
             
             if (s.CommentMessageIds.Count > 0)
-                await pipeline.DeleteManyAsync(query.Message!.Chat.Id, s.CommentMessageIds, ct);
+                await pipeline.DeleteManyAsync(chatId, s.CommentMessageIds, ct);
             s.CommentMessageIds.Clear();
             await sessions.UpsertAsync(s);
 
-            await checkoutHandler.StartAsync(query.Message!.Chat.Id, query.From.Id, ct);
-            await bot.AnswerCallbackQuery(query.Id, "Заказ без комментария", cancellationToken: ct);
+            await checkoutHandler.StartAsync(chatId, fromId, ct);
+            await bot.AnswerCallbackQuery(queryId, "Заказ без комментария", cancellationToken: ct);
             return;
         }
         
         if (data.StartsWith(CallbackPrefixes.EditComment))
         {
-            var s = await sessions.GetOrCreateAsync(query.From.Id);
             s.State = FlowState.CommentPending;
             await sessions.UpsertAsync(s);
 
-            var msg = await bot.EditMessageText(query.Message!.Chat.Id, 
-                query.Message.MessageId,  
+            cMsg = await bot.EditMessageText(chatId, 
+                msgId,  
                 "Введите новый комментарий:",
-                replyMarkup: Kb.SkipComment(),
+                replyMarkup: Kb.SkipComment,
                 cancellationToken: ct);
             
-            s.CommentMessageIds.Add(msg.MessageId);
+            s.CommentMessageIds.Add(cMsg.MessageId);
             await sessions.UpsertAsync(s);
 
-            await bot.AnswerCallbackQuery(query.Id, cancellationToken: ct);
+            await bot.AnswerCallbackQuery(queryId, cancellationToken: ct);
             return;
         }
         
         if (data.StartsWith(CallbackPrefixes.SaveComment))
         {
-            var s = await sessions.GetOrCreateAsync(query.From.Id);
             s.Comment = s.DraftComment;
             s.DraftComment = null;
             s.State = FlowState.CheckoutMethod;
@@ -290,70 +318,168 @@ public class CallbackHandler(
             
             // удаляем корзину + историю диалога по комменту
             if (s.CartMessageId is { } cmid)
-                await pipeline.DeleteIfExistsAsync(query.Message!.Chat.Id, cmid, ct);
+                await pipeline.DeleteIfExistsAsync(chatId, cmid, ct);
             if (s.CommentMessageIds.Count > 0)
-                await pipeline.DeleteManyAsync(query.Message.Chat.Id, s.CommentMessageIds, ct);
+                await pipeline.DeleteManyAsync(chatId, s.CommentMessageIds, ct);
 
             s.CartMessageId = null;
             s.CommentMessageIds.Clear();
             await sessions.UpsertAsync(s);
             
-            await bot.SendMessage(
-                query.Message!.Chat.Id,
+            cMsg = await bot.SendMessage(chatId,
                 "Комментарий сохранён \u2705\n\nПереходим к выбору способа получения.",
                 cancellationToken: ct);
-            await checkoutHandler.StartAsync(query.Message!.Chat.Id, query.From.Id, ct);
+            
+            s.CommentMessageIds.Add(cMsg.MessageId);
+            await sessions.UpsertAsync(s);
+            
+            await checkoutHandler.StartAsync(chatId, fromId, ct);
         }
     }
     
     private async Task HandleCheckout(string data, CallbackQuery query, CancellationToken ct)
     {
+        var s = await sessions.GetOrCreateAsync(query.From.Id);
+        var chatId = query.Message!.Chat.Id;
+        var userId =  query.From.Id;
+        var queryId = query.Id;
+        Message? aMsg;
+        
         switch (data)
         {
             case CallbackPrefixes.CheckoutMethodDelivery:
-                await checkoutHandler.HandleMethodAsync(query, isDelivery: true, ct); return;
+                await pipeline.DeleteManyAsync(chatId, s.CheckoutMessageIds, ct);
+                await checkoutHandler.HandleMethodAsync(query, isDelivery: true, ct); 
+                return;
+            
             case CallbackPrefixes.CheckoutMethodPickup:
-                await checkoutHandler.HandleMethodAsync(query, isDelivery: false, ct); return;
+                await pipeline.DeleteManyAsync(chatId, s.CheckoutMessageIds, ct);
+                s.DraftDelivery.Method = DeliveryMethod.Pickup;
+                s.State = FlowState.PickupPreview;
+                await sessions.UpsertAsync(s);
+
+                await checkoutHandler.ShowPickupPointAsync(chatId, userId, ct);
+                await bot.AnswerCallbackQuery(query.Id, cancellationToken: ct);
+                return;
+            
+            case CallbackPrefixes.AddressGeoCurrent:
+                await pipeline.DeleteManyAsync(chatId, s.CheckoutMessageIds, ct);
+                s.State = FlowState.CheckoutAddressGeo;
+                await sessions.UpsertAsync(s);
+                aMsg = await bot.SendMessage(chatId,
+                    "📍 Отправьте свою текущую геопозицию." +
+                    "\n\nℹ️ Для передачи своей текущей локации требуется доступ к местоположению. " +
+                    "\n\n Если у вас отключена эта функция: " +
+                    "\n  1) Перейдите в [⚙️ Настройки] > [Местоположение]" +
+                    "\n  2) 🟢 активируйте доступ.",
+                    replyMarkup: Kb.Back(CallbackPrefixes.CheckoutMethodDelivery),
+                    cancellationToken: ct);
+                
+                var geoKb = await bot.SendMessage(chatId,
+                    "👇 Нажмите кнопку ниже, чтобы отправить локацию.",
+                    replyMarkup: Kb.GeoCurrent,
+                    cancellationToken: ct);
+                
+                s.CheckoutMessageIds.AddRange([aMsg.MessageId,  geoKb.MessageId]);
+                await sessions.UpsertAsync(s);
+                return;
+
+            case CallbackPrefixes.AddressGeoManual:
+                await pipeline.DeleteManyAsync(chatId, s.CheckoutMessageIds, ct);
+                await checkoutHandler.AskManualMapInstruction(chatId, query.From.Id, ct);
+                await bot.AnswerCallbackQuery(query.Id, cancellationToken: ct);
+                return;
+            
+            case CallbackPrefixes.AddressManual:
+                await pipeline.DeleteManyAsync(chatId, s.CheckoutMessageIds, ct);
+                s.State = FlowState.CheckoutAddressManual;
+                await sessions.UpsertAsync(s);
+                aMsg = await bot.SendMessage(chatId,
+                    "✏️ Введите адрес вручную (улица + номер дома):",
+                    replyMarkup: Kb.Back(CallbackPrefixes.CheckoutMethodDelivery),
+                    cancellationToken: ct);
+                s.CheckoutMessageIds.Add(aMsg.MessageId);
+                await sessions.UpsertAsync(s);
+                return;
+
+            case CallbackPrefixes.AddressEdit:
+                await pipeline.DeleteManyAsync(chatId, s.CheckoutMessageIds, ct);
+                await checkoutHandler.AskAddressModeAsync(chatId, userId, ct);
+                await bot.AnswerCallbackQuery(query.Id, cancellationToken: ct);
+                return;
+            
+            case CallbackPrefixes.AddressBackToMethod:
+                var msg = await bot.SendMessage(chatId,
+                    "Возвращаемся к выбору способа получения.",
+                    replyMarkup: new ReplyKeyboardRemove(),
+                    cancellationToken: ct);
+
+                await pipeline.DeleteManyAsync(chatId, s.CheckoutMessageIds, ct);
+                s.CheckoutMessageIds.Clear();
+                s.CheckoutMessageIds.Add(msg.MessageId);
+                await sessions.UpsertAsync(s);
+
+                await checkoutHandler.StartAsync(chatId, query.From.Id, ct);
+                await bot.AnswerCallbackQuery(query.Id, cancellationToken: ct);
+                return;
+            
+            case CallbackPrefixes.AddressConfirm:
+                s.State = FlowState.CheckoutTime;
+                await sessions.UpsertAsync(s);
+                await checkoutHandler.AskDateAsync(chatId, userId, ct);
+                return;
+            
+            case CallbackPrefixes.PickupConfirm:
+                s.State = FlowState.CheckoutTime;
+                await sessions.UpsertAsync(s);
+
+                await pipeline.DeleteManyAsync(chatId, s.CheckoutMessageIds, ct);
+                s.CheckoutMessageIds.Clear();
+
+                await checkoutHandler.AskDateAsync(chatId, userId, ct);
+                await bot.AnswerCallbackQuery(queryId, cancellationToken: ct);
+                return;
             
             // переходим к шагу "указать телефон"
             case CallbackPrefixes.SendPhone:
-                var s = await sessions.GetOrCreateAsync(query.From.Id);
                 s.State = FlowState.Confirm;
                 await sessions.UpsertAsync(s);
-                await checkoutHandler.SendConfirmCard(query.Message!.Chat.Id, s, ct);
-                await bot.AnswerCallbackQuery(query.Id, "Телефон получен ✅", cancellationToken: ct);
+                await checkoutHandler.SendConfirmCard(chatId, s, ct);
+                await bot.AnswerCallbackQuery(queryId, "Телефон получен ✅", cancellationToken: ct);
                 return;
         }
     }
     
     private async Task HandleConfirm(string data, CallbackQuery query, CancellationToken ct)
     {
+        var userId = query.From.Id;
+        var s = await sessions.GetOrCreateAsync(userId);
+        var chatId = query.Message!.Chat.Id;
+        var msgId = query.Message.MessageId;
+        var queryId = query.Id;
+
         switch (data)
         {
             case CallbackPrefixes.CheckoutConfirm:
-                await confirmHandler.HandleConfirm(query, ct); 
-                await bot.SendMessage(query.Message!.Chat.Id,
-                    text: "Выберите действие:",
-                    replyMarkup: Kb.MainInline(),
-                    cancellationToken: ct);
-                return;
-            case CallbackPrefixes.CheckoutEdit:
-                // Возврат к выбору способа
-                await checkoutHandler.StartAsync(query.Message!.Chat.Id, query.From.Id, ct);
-                await bot.AnswerCallbackQuery(query.Id, cancellationToken: ct);
-                return;
-            case CallbackPrefixes.CheckoutCancel:
-            {
-                var s = await sessions.GetOrCreateAsync(query.From.Id);
-                s.State = FlowState.Browsing;
+                await confirmHandler.HandleConfirm(query, ct);
                 await sessions.UpsertAsync(s);
-                await bot.EditMessageText(query.Message!.Chat.Id, query.Message.MessageId,
-                    "Оформление отменено. Выберите категорию:", cancellationToken: ct);
-                var categories = await menu.GetCategoriesAsync();
-                await bot.SendMessage(query.Message.Chat.Id, "📋 Выберите категорию:",
-                    replyMarkup: Kb.Categories(categories), cancellationToken: ct);
-                await bot.AnswerCallbackQuery(query.Id, cancellationToken: ct);
-                break;
+                return;
+            
+            case CallbackPrefixes.CheckoutEdit:
+                
+                // Возврат к выбору способа
+                await checkoutHandler.StartAsync(chatId, userId, ct);
+                await bot.AnswerCallbackQuery(queryId, cancellationToken: ct);
+                return;
+            
+            case CallbackPrefixes.CheckoutCancel:
+            case CallbackPrefixes.BackToWelcome:
+            {
+                await pipeline.DeleteManyAsync(chatId, s.CheckoutMessageIds, ct);
+                await messageHandler.SendWelcomeAsync(chatId, ct);
+                // await messageHandler.AskNewSessionAsync(chatId, userId, ct); // TODO: Handle session saved info and userProfile data
+                await bot.AnswerCallbackQuery(queryId, cancellationToken: ct);
+                return;
             }
         }
     }
@@ -361,6 +487,10 @@ public class CallbackHandler(
     private async Task HandleDateTimeSelection(string data, CallbackQuery query, CancellationToken ct)
     {
         var s = await sessions.GetOrCreateAsync(query.From.Id);
+        var chatId = query.Message!.Chat.Id;
+        var msgId = query.Message.MessageId;
+        var queryId = query.Id;
+        Message tMsg;
 
         if (data.StartsWith(CallbackPrefixes.ChooseDate))
         {
@@ -368,14 +498,11 @@ public class CallbackHandler(
             s.DraftDelivery.ScheduledTime = date;
             await sessions.UpsertAsync(s);
 
-            var tmsg = await bot.EditMessageText(
-                query.Message!.Chat.Id, query.Message.MessageId,
-                "Выберите время:",
-                replyMarkup: Kb.TimeKb(date),
-                cancellationToken: ct);
+            tMsg = await bot.EditMessageText(chatId, msgId,
+                "Выберите время:", replyMarkup: Kb.TimeKb(date), cancellationToken: ct);
             
-            await bot.AnswerCallbackQuery(query.Id, cancellationToken: ct);
-            s.CheckoutMessageIds.Add(tmsg.MessageId);
+            await bot.AnswerCallbackQuery(queryId, cancellationToken: ct);
+            s.CheckoutMessageIds.Add(tMsg.MessageId);
             await sessions.UpsertAsync(s);
             return;
         }
@@ -388,17 +515,16 @@ public class CallbackHandler(
             await sessions.UpsertAsync(s);
 
             // очищаем клавиатуру с часами
-            await pipeline.RemoveKb(query.Message!.Chat.Id, query.Message.MessageId, ct);
+            await pipeline.RemoveKb(chatId, msgId, ct);
             
             // подтверждаем выбранное время
-            var tmsg = await bot.SendMessage(
-                query.Message!.Chat.Id,
+            tMsg = await bot.SendMessage(chatId, 
                 $"Вы выбрали: <b>{dt:dd.MM HH:mm}</b>",
                 parseMode: ParseMode.Html,
                 replyMarkup: Kb.SaveOrEdit(CallbackPrefixes.SaveTime, CallbackPrefixes.EditTime),
                 cancellationToken: ct);
             
-            s.CheckoutMessageIds.Add(tmsg.MessageId);
+            s.CheckoutMessageIds.Add(tMsg.MessageId);
             await sessions.UpsertAsync(s);
             return;
         }
@@ -406,23 +532,20 @@ public class CallbackHandler(
         switch (data)
         {
             case CallbackPrefixes.SaveTime:
-                await pipeline.RemoveKb(query.Message!.Chat.Id, query.Message.MessageId, ct);
-            
+                await pipeline.RemoveKb(chatId, msgId, ct);
                 s.State = FlowState.CheckoutPhone;
                 await sessions.UpsertAsync(s);
-                await checkoutHandler.AskPhoneAsync(query.Message.Chat.Id, query.From.Id, ct);
-                await bot.AnswerCallbackQuery(query.Id, "Время сохранено ✅", cancellationToken: ct);
+                await checkoutHandler.AskPhoneAsync(chatId, query.From.Id, ct);
+                await bot.AnswerCallbackQuery(queryId, "Время сохранено ✅", cancellationToken: ct);
                 return;
             
             case CallbackPrefixes.EditTime:
             {
-                var emsg = await bot.EditMessageText(
-                    query.Message!.Chat.Id, query.Message.MessageId,
-                    "Выберите новую дату:",
-                    replyMarkup: Kb.DateKb(),
-                    cancellationToken: ct);
+                var eMsg = await bot.EditMessageText(
+                    chatId, msgId, "Выберите новую дату:",
+                    replyMarkup: Kb.DateKb(), cancellationToken: ct);
             
-                s.CheckoutMessageIds.Add(emsg.MessageId);
+                s.CheckoutMessageIds.Add(eMsg.MessageId);
                 await sessions.UpsertAsync(s);
                 break;
             }

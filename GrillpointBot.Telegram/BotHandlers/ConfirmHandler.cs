@@ -2,6 +2,7 @@ using GrillpointBot.Core.Common;
 using GrillpointBot.Core.Config;
 using GrillpointBot.Core.Interfaces;
 using GrillpointBot.Core.Models;
+using GrillpointBot.Telegram.Services;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -31,12 +32,22 @@ public class ConfirmHandler(
             UserName = string.Join(' ', new[] { cq.From.FirstName, cq.From.LastName }.Where(x => !string.IsNullOrWhiteSpace(x))),
             Delivery = new DeliveryInfo
             {
-                Method = s.DraftDelivery.Method,
-                City = s.DraftDelivery.City,
-                Street = s.DraftDelivery.Street,
-                House = s.DraftDelivery.House,
-                Phone = s.DraftDelivery.Phone,
-                ScheduledTime = s.DraftDelivery.ScheduledTime
+                Method      = s.DraftDelivery.Method,
+                
+                FullAddress =  s.DraftDelivery.FullAddress,
+                
+                City     = s.DraftDelivery.City,
+                Locality = s.DraftDelivery.Locality,
+                Street   = s.DraftDelivery.Street,
+                House    = s.DraftDelivery.House,
+                POI      = s.DraftDelivery.POI,
+                Postcode = s.DraftDelivery.Postcode,
+                
+                Lat = s.DraftDelivery.Lat,
+                Lon = s.DraftDelivery.Lon,
+                
+                ScheduledTime = s.DraftDelivery.ScheduledTime,
+                PhoneDisplay  = s.DraftDelivery.Phone
             },
             Comment = s.Comment
         };
@@ -63,7 +74,7 @@ public class ConfirmHandler(
             cq.Message!.Chat.Id, cq.Message.MessageId,
             $"✅ Спасибо за заказ!\nНомер: <b>#{order.Id[..6]}</b>\nИтого: <b>{order.Total:0.#} ₽</b>\n" +
             $"{(order.Delivery.Method == DeliveryMethod.Delivery ? "Способ: доставка" : "Способ: самовывоз")}",
-            parseMode: ParseMode.Html, cancellationToken: ct);
+            parseMode: ParseMode.Html, replyMarkup: Kb.BackToWelcome, cancellationToken: ct);
 
         await bot.AnswerCallbackQuery(cq.Id, cancellationToken: ct);
         
@@ -77,8 +88,8 @@ public class ConfirmHandler(
             };
             if (order.Delivery.Method == DeliveryMethod.Delivery)
                 lines.Add($"Адрес: {order.Delivery.FullAddress}");
-            if (!string.IsNullOrWhiteSpace(order.Delivery.Phone))
-                lines.Add($"Телефон: {order.Delivery.Phone}");
+            if (!string.IsNullOrWhiteSpace(order.Delivery.PhoneDisplay))
+                lines.Add($"Телефон: {order.Delivery.PhoneDisplay}");
             if (!string.IsNullOrWhiteSpace(order.Comment))
                 lines.Add($"Комментарий: {order.Comment}");
             

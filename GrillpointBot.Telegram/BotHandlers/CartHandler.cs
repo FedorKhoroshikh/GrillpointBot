@@ -75,7 +75,7 @@ public class CartHandler(
                 messageId: existing,
                 text: msgBody,
                 parseMode: ParseMode.Html,
-                replyMarkup: Kb.CartSummary(),
+                replyMarkup: Kb.CartSummary,
                 cancellationToken: ct);
             await sessions.UpsertAsync(s);
             return;
@@ -86,7 +86,7 @@ public class CartHandler(
             chatId: cq.Message!.Chat.Id,
             text: msgBody,
             parseMode: ParseMode.Html,
-            replyMarkup: Kb.CartSummary(),
+            replyMarkup: Kb.CartSummary,
             cancellationToken: ct);
 
         s.CartMessageId = sent.MessageId;

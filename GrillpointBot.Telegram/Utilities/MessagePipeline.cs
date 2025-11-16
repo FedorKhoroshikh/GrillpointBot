@@ -20,6 +20,6 @@ public class MessagePipeline(
     }
 
     public Task RemoveKb(long chatId, int messageId, CancellationToken ct) =>
-        Task.FromResult(bot.EditMessageReplyMarkup(chatId, 
-            messageId, replyMarkup: null, cancellationToken: ct));
+        bot.EditMessageReplyMarkup(chatId, messageId,
+            replyMarkup: null, cancellationToken: ct);
 }

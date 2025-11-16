@@ -44,16 +44,20 @@ public static class DependencyInjection
         services.AddSingleton<IMenuRepository, JsonMenuRepository>();
         services.AddSingleton<IOrderRepository, JsonOrderRepository>();
         
-        // Handlers
         services.AddSingleton<UpdateRouter>();
+        
+        // Handlers
         services.AddSingleton<MessageHandler>();
         services.AddSingleton<CallbackHandler>();
         services.AddSingleton<CatalogHandler>();
         services.AddSingleton<CartHandler>();
         services.AddSingleton<ConfirmHandler>();
         services.AddSingleton<CheckoutHandler>();
+        
+        // Utilities
         services.AddSingleton<MessagePipeline>();
         services.AddSingleton<MessageFormatter>();
+        services.AddSingleton<GeoProcessor>();
 
         var provider = services.BuildServiceProvider();
         var bot = provider.GetRequiredService<UpdateRouter>();
